@@ -1,0 +1,36 @@
+
+GraphedExpression="adc_buffer[0]", DisplayFormat=DISPLAY_FORMAT_DEC, Color=#a00909
+GraphedExpression="adc_buffer[1]", Color=#09a01b
+GraphedExpression="adc_buffer[2]", Color=#09a087
+GraphedExpression="adc_buffer[3]", Color=#0984a0
+OpenDocument="main.c", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/Core/Src/main.c", Line=185
+OpenDocument="stm32f1xx_it.c", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/Core/Src/stm32f1xx_it.c", Line=89
+OpenDocument="stm32f1xx_hal.c", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c", Line=376
+OpenDocument="stm32f1xx_hal_uart.c", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c", Line=3185
+OpenDocument="startup_stm32f103xb.s", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/startup_stm32f103xb.s", Line=57
+OpenDocument="stm32f1xx_hal_dma.c", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c", Line=430
+OpenDocument="stm32f1xx_hal_rcc.c", FilePath="D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c", Line=727
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=0, w=273, h=535, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Source Files", DockArea=LEFT, x=0, y=1, w=1349, h=133, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=BOTTOM, x=0, y=0, w=457, h=870, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Memory 1", DockArea=BOTTOM, x=4, y=0, w=268, h=870, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x20000034
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=0, w=1349, h=401, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Data Sampling", DockArea=BOTTOM, x=2, y=0, w=299, h=870, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VisibleTab=0, UniformSampleSpacing=0
+OpenWindow="Timeline", DockArea=BOTTOM, x=3, y=0, w=1117, h=870, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, DataPaneShown=1, PowerPaneShown=1, CodePaneShown=1, PinCursor="Cursor Movable", TimePerDiv="500 ms / Div", TimeStampFormat="Time", DataGraphDrawAsPoints=1, DataGraphLegendShown=1, DataGraphUniformSampleSpacing=0, DataGraphLegendPosition="843;-175", PowerGraphDrawAsPoints=0, PowerGraphLegendShown=1, PowerGraphAvgFilterTime=Off, PowerGraphAvgFilterLen=Off, PowerGraphUniformSampleSpacing=0, PowerGraphLegendPosition="860;-93", CodeGraphLegendShown=1, CodeGraphLegendPosition="887;0"
+OpenWindow="Console", DockArea=BOTTOM, x=1, y=0, w=415, h=870, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+TableHeader="Source Files", SortCol="File", SortOrder="ASCENDING", VisibleCols=["File";"Status";"Size";"#Insts";"Path"], ColWidths=[215;100;100;100;1279]
+TableHeader="Data Sampling Table", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";" adc_buffer[0]";" adc_buffer[1]";" adc_buffer[2]";" adc_buffer[3]"], ColWidths=[100;100;100;100;100;100]
+TableHeader="Data Sampling Setup", SortCol="Expression", SortOrder="DESCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[118;182;100;100;100;111;132;146;151]
+TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[100;144;399]
+TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[179;578;134;432]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;340]
+WatchedExpression="adc_buffer", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="AUX1", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="AUX2", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="uart_buffer", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="output_filtered", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="adc_error", RefreshRate=5, Window=Watched Data 1
+WatchedExpression="alpha", RefreshRate=5, Window=Watched Data 1
