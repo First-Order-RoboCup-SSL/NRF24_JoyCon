@@ -52,6 +52,15 @@ typedef struct {
     uint8_t kickers;           // Upper and lower kicker power
 } __attribute__((packed)) NRF24_TxBuffer_t;
 
+/**
+  * @brief  Physical velocity values from remapped ADC (in float32)
+  */
+typedef struct {
+    float forward_vel;      // Forward velocity in m/s
+    float left_vel;        // Left velocity in m/s
+    float angular_vel;     // Angular velocity in rad/s
+} PhysicalVelocity_t;
+
 /* Exported constants --------------------------------------------------------*/
 #define NRF24_TX_BUFFER_SIZE    10        // Pure data size
 #define NRF24_CHANNEL           76        // Communication channel
@@ -65,6 +74,22 @@ typedef struct {
 
 // Robot ID range
 extern volatile uint8_t MAX_ROBOT_NUMBER;  // Maximum robot ID (0 to MAX_ROBOT_NUMBER-1)
+
+// Physical limits for velocities
+#define MAX_FORWARD_VEL 2.0f    // Maximum forward velocity in m/s
+#define MAX_LEFT_VEL 2.0f       // Maximum left velocity in m/s  
+#define MAX_ANGULAR_VEL 4.0f    // Maximum angular velocity in rad/s
+
+// ADC center and range values
+#define ADC_CENTER 2048
+#define ADC_MAX 4095
+#define ADC_MIN 0
+
+// Float16 conversion constants
+#define FLOAT16_SIGN_MASK    0x8000
+#define FLOAT16_EXP_MASK     0x7C00
+#define FLOAT16_FRAC_MASK    0x03FF
+#define FLOAT16_EXP_BIAS     15
 
 /* Exported macro ------------------------------------------------------------*/
 
@@ -140,6 +165,8 @@ void NRF24_Comm_UpdateRobotID(bool increment);
   * @retval bool: true if local control can write, false otherwise
   */
 bool NRF24_Comm_CanLocalControlWrite(void);
+
+PhysicalVelocity_t NRF24_Comm_GetPhysicalVelocity(void);
 
 extern NRF24_TxBuffer_t tx_buffer;
 extern NRF24_Status_t nrf24_status;

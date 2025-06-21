@@ -10,6 +10,7 @@
 #include "NRF24.h"
 #include "NRF24_reg_addresses.h"
 #include <string.h>
+#include <math.h>
 
 /* Private define ------------------------------------------------------------*/
 #define BUZZER_PIN           GPIO_PIN_12
@@ -26,6 +27,9 @@ static uint8_t current_robot_id = 0;
 
 // Default maximum robot number (can be changed externally)
 volatile uint8_t MAX_ROBOT_NUMBER = 16;
+
+// Global variables
+PhysicalVelocity_t physical_remapped_adc = {0};
 
 /* Private function prototypes -----------------------------------------------*/
 static void NRF24_Comm_BuzzerBeep(uint32_t duration_ms);
@@ -74,6 +78,74 @@ static bool NRF24_Comm_TestCommunication(void)
   nrf24_set_channel(NRF24_CHANNEL);
   
   return (read_channel == test_channel);
+}
+
+/**
+ * @brief Maps ADC value (0-4095) to physical velocity with strict bounds checking
+ * @param adc_value: Raw ADC value
+ * @param max_vel: Maximum velocity (positive)
+ * @return Mapped velocity in physical units (m/s or rad/s)
+ */
+static float map_adc_to_velocity(uint16_t adc_value, float max_vel) {
+    // Strict bounds checking
+    if (adc_value > ADC_MAX) adc_value = ADC_MAX;
+    if (adc_value < ADC_MIN) adc_value = ADC_MIN;
+    
+    // Convert to signed range first
+    int32_t signed_value = (int32_t)adc_value - ADC_CENTER;
+    
+    // Calculate percentage of full range (-1.0 to +1.0)
+    float percentage;
+    if (signed_value >= 0) {
+        percentage = (float)signed_value / (float)(ADC_MAX - ADC_CENTER);
+    } else {
+        percentage = (float)signed_value / (float)(ADC_CENTER - ADC_MIN);
+    }
+    
+    // Apply deadband
+    if (percentage > -0.02f && percentage < 0.02f) {
+        return 0.0f;
+    }
+    
+    // Calculate velocity with strict bounds
+    float velocity = percentage * max_vel;
+    
+    // Final bounds check
+    if (velocity > max_vel) velocity = max_vel;
+    if (velocity < -max_vel) velocity = -max_vel;
+    
+    return velocity;
+}
+
+/**
+ * @brief Convert float32 to float16 exactly matching NumPy's float16
+ * @param f: Input float32 value
+ * @return uint16_t: Float16 bits
+ */
+static uint16_t float32_to_float16(float f) {
+    union { float f; uint32_t u; } v = { f };
+    uint32_t x = v.u;
+
+    uint32_t sign     = (x >> 31) & 0x1;
+    int32_t  exponent = ((x >> 23) & 0xFF) - 127; // float32 bias is 127
+    uint32_t mantissa = x & 0x7FFFFF;
+
+    uint16_t hsign = sign << 15;
+    int16_t hexponent;
+    uint16_t hmantissa;
+
+    if (exponent > 15) {
+        // Overflow for float16 (max exponent is 15), return inf
+        return hsign | (0x1F << 10);
+    } else if (exponent > -15) {
+        // Normal float16
+        hexponent = exponent + 15;
+        hmantissa = mantissa >> 13; // 23 - 10
+        return hsign | (hexponent << 10) | hmantissa;
+    } else {
+        // Underflow ¡ú too small ¡ú return zero
+        return hsign;
+    }
 }
 
 /* Public functions ----------------------------------------------------------*/
@@ -169,10 +241,31 @@ void NRF24_Comm_UpdateTxBuffer(uint16_t adc_values[4], uint8_t aux1, uint8_t aux
         return;
     }
     
-    // Map joystick channels to velocities
-    tx_buffer.angular_vel = adc_values[0];  // Channel 0 for rotation
-    tx_buffer.forward_vel = adc_values[2];  // Channel 2 for forward/backward
-    tx_buffer.left_vel = adc_values[3];     // Channel 3 for left/right
+    // Map joystick channels to velocities with physical units and store in monitoring buffer
+    physical_remapped_adc.angular_vel = map_adc_to_velocity(adc_values[0], MAX_ANGULAR_VEL);
+    physical_remapped_adc.forward_vel = map_adc_to_velocity(adc_values[2], MAX_FORWARD_VEL);
+    physical_remapped_adc.left_vel = map_adc_to_velocity(adc_values[3], MAX_LEFT_VEL);
+    
+    // Ensure values are within physical limits
+    if (physical_remapped_adc.forward_vel > MAX_FORWARD_VEL) 
+        physical_remapped_adc.forward_vel = MAX_FORWARD_VEL;
+    if (physical_remapped_adc.forward_vel < -MAX_FORWARD_VEL) 
+        physical_remapped_adc.forward_vel = -MAX_FORWARD_VEL;
+        
+    if (physical_remapped_adc.left_vel > MAX_LEFT_VEL)
+        physical_remapped_adc.left_vel = MAX_LEFT_VEL;
+    if (physical_remapped_adc.left_vel < -MAX_LEFT_VEL)
+        physical_remapped_adc.left_vel = -MAX_LEFT_VEL;
+        
+    if (physical_remapped_adc.angular_vel > MAX_ANGULAR_VEL)
+        physical_remapped_adc.angular_vel = MAX_ANGULAR_VEL;
+    if (physical_remapped_adc.angular_vel < -MAX_ANGULAR_VEL)
+        physical_remapped_adc.angular_vel = -MAX_ANGULAR_VEL;
+    
+    // Convert to float16 format
+    tx_buffer.angular_vel = float32_to_float16(physical_remapped_adc.angular_vel);
+    tx_buffer.forward_vel = float32_to_float16(physical_remapped_adc.forward_vel);
+    tx_buffer.left_vel = float32_to_float16(physical_remapped_adc.left_vel);
     
     // Map Channel 1 to dribbler (bits 15:14 for state, 13:0 for speed)
     uint16_t dribbler_val = adc_values[1];
@@ -331,4 +424,9 @@ void NRF24_Comm_IRQ_Handler(void)
   if (status & (1 << RX_DR)) {
     nrf24_clear_rx_dr();
   }
+}
+
+PhysicalVelocity_t NRF24_Comm_GetPhysicalVelocity(void)
+{
+    return physical_remapped_adc;
 } 

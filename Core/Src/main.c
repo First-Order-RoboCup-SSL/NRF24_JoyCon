@@ -60,7 +60,7 @@ UART_HandleTypeDef huart1;
 extern NRF24_Status_t nrf24_status;
 
 // Local variables
-uint16_t adc_buffer[4];
+uint16_t adc_raw_buffer[4];
 uint8_t AUX1=0;
 uint8_t AUX2=0;
 uint8_t AUX3=0;  // Added AUX3
@@ -68,7 +68,7 @@ uint8_t uart_buffer[12];  // Single buffer for UART communication
 
 // Calibration variables
 uint16_t adc_center[4];    // Center values for each channel
-int16_t adc_error[4];      // Error between raw ADC and center values
+int16_t adc_calib_error[4];      // Calibration error between raw ADC and center values
 uint16_t adc_min[4];       // Minimum ADC values for each channel
 uint16_t adc_max[4];       // Maximum ADC values for each channel
 
@@ -122,32 +122,52 @@ static void MX_SPI2_Init(void);
 /* USER CODE BEGIN 0 */
 uint16_t remap_adc_value(uint16_t raw_value, uint16_t center, uint16_t min_val, uint16_t max_val)
 {
-  // If value is in center region, keep it unchanged
-  if(abs((int16_t)raw_value - (int16_t)center) <= CENTER_REGION) {
-    return center;
-  }
-  
-  // Calculate mapping for lower region (min_val to center)
-  if(raw_value < center) {
-    float ratio = (float)(center - ADC_MIN) / (float)(center - min_val);
-    return center - (uint16_t)((center - raw_value) * ratio);
-  }
-  // Calculate mapping for upper region (center to max_val)
-  else {
-    float ratio = (float)(ADC_MAX - center) / (float)(max_val - center);
-    return center + (uint16_t)((raw_value - center) * ratio);
-  }
+    // Ensure input is within bounds
+    if (raw_value > ADC_MAX) raw_value = ADC_MAX;
+    if (raw_value < ADC_MIN) raw_value = ADC_MIN;
+    
+    // If value is in center region, keep it unchanged
+    if(abs((int16_t)raw_value - (int16_t)center) <= CENTER_REGION) {
+        return center;
+    }
+    
+    // Calculate mapping for lower region (min_val to center)
+    if(raw_value < center) {
+        // Ensure we don't divide by zero
+        if (min_val >= center) return center;
+        float ratio = (float)(center - ADC_MIN) / (float)(center - min_val);
+        int32_t result = center - (int32_t)((center - raw_value) * ratio);
+        // Ensure result stays within bounds
+        if (result < ADC_MIN) result = ADC_MIN;
+        if (result > ADC_MAX) result = ADC_MAX;
+        return (uint16_t)result;
+    }
+    // Calculate mapping for upper region (center to max_val)
+    else {
+        // Ensure we don't divide by zero
+        if (max_val <= center) return center;
+        float ratio = (float)(ADC_MAX - center) / (float)(max_val - center);
+        int32_t result = center + (int32_t)((raw_value - center) * ratio);
+        // Ensure result stays within bounds
+        if (result < ADC_MIN) result = ADC_MIN;
+        if (result > ADC_MAX) result = ADC_MAX;
+        return (uint16_t)result;
+    }
 }
 
 void filter_adc_values(void)
 {
-  for(int i = 0; i < 4; i++) {
-    // Calculate new filtered value with float precision
-    float new_value = alpha * adc_buffer[i] + (1 - alpha) * adc_filtered[i];
-    
-    // Update the filtered value
-    adc_filtered[i] = (uint16_t)new_value;
-  }
+    for(int i = 0; i < 4; i++) {
+        // Calculate new filtered value with float precision
+        float new_value = alpha * (float)adc_raw_buffer[i] + (1.0f - alpha) * (float)adc_filtered[i];
+        
+        // Ensure the filtered value stays within bounds
+        if (new_value > ADC_MAX) new_value = ADC_MAX;
+        if (new_value < ADC_MIN) new_value = ADC_MIN;
+        
+        // Update the filtered value
+        adc_filtered[i] = (uint16_t)new_value;
+    }
 }
 
 void pack_and_transmit_uart(void)
@@ -223,7 +243,7 @@ int main(void)
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET);
 
     // Start ADC DMA
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, 4);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_raw_buffer, 4);
     HAL_Delay(100);  // Wait for ADC to stabilize
 
     // Initialize NRF24
@@ -256,12 +276,12 @@ int main(void)
     
     // Calculate errors between raw ADC values and center values
     for(int i = 0; i < 4; i++) {
-        adc_error[i] = (int16_t)adc_buffer[i] - (int16_t)adc_center[i];
+        adc_calib_error[i] = (int16_t)adc_raw_buffer[i] - (int16_t)adc_center[i];
     }
     
     // Initialize filtered values with current raw values
     for(int i = 0; i < 4; i++) {
-        adc_filtered[i] = adc_buffer[i];
+        adc_filtered[i] = adc_raw_buffer[i];
     }
     
     // Double beep to indicate calibration complete
@@ -287,13 +307,23 @@ int main(void)
         if (NRF24_Comm_CanLocalControlWrite()) {
             filter_adc_values();
             
-            uint16_t processed_values[4];
+            uint16_t adc_processed_values[4];
             for(int i = 0; i < 4; i++) {
-                uint16_t compensated = adc_filtered[i] - adc_error[i];
-                processed_values[i] = remap_adc_value(compensated, adc_center[i], adc_min[i], adc_max[i]);
+                // Use signed arithmetic for error compensation
+                int32_t value = (int32_t)adc_filtered[i] - (int32_t)adc_calib_error[i];
+                
+                // Bound check the result
+                if (value < ADC_MIN) value = ADC_MIN;
+                if (value > ADC_MAX) value = ADC_MAX;
+                
+                // Convert back to uint16_t after bounds checking
+                uint16_t compensated = (uint16_t)value;
+                
+                // Now do the remapping
+                adc_processed_values[i] = remap_adc_value(compensated, adc_center[i], adc_min[i], adc_max[i]);
             }
             
-            NRF24_Comm_UpdateTxBuffer(processed_values, AUX1, AUX2);
+            NRF24_Comm_UpdateTxBuffer(adc_processed_values, AUX1, AUX2);
         }
         
         NRF24_Comm_Transmit();

@@ -4,8 +4,8 @@
 *                         www.segger.com                             *
 **********************************************************************
 
-File          : D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl/remoteCtrl_debug.jdebug
-Created       : 8 Jun 2025 14:31
+File          : D:/NRF24_JoyCon/JoyCon_Debug.jdebug
+Created       : 20 Jun 2025 18:06
 Ozone Version : V3.26h
 */
 
@@ -22,8 +22,8 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("D:/EEE1/EE_Project/Joystick_remote/JoyStick_RemoteCtrl", "$(ProjectDir)");
-  Project.AddPathSubstitute ("d:/eee1/ee_project/joystick_remote/joystick_remotectrl", "$(ProjectDir)");
+  Project.AddPathSubstitute ("D:/NRF24_JoyCon", "$(ProjectDir)");
+  Project.AddPathSubstitute ("d:/nrf24_joycon", "$(ProjectDir)");
   Project.SetDevice ("STM32F103C8");
   Project.SetHostIF ("USB", "");
   Project.SetTargetIF ("SWD");
@@ -32,7 +32,6 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
-  Edit.SysVar (VAR_HSS_SPEED, FREQ_10_KHZ);
   File.Open ("$(ProjectDir)/build/JoyStick_RemoteCtrl.elf");
 }
 
