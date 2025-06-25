@@ -170,6 +170,7 @@ void filter_adc_values(void)
     }
 }
 
+/*
 void pack_and_transmit_uart(void)
 {
     // Apply low-pass filtering
@@ -200,6 +201,7 @@ void pack_and_transmit_uart(void)
     while(huart1.gState != HAL_UART_STATE_READY);
     HAL_UART_Transmit(&huart1, uart_buffer, UART_BUFFER_SIZE, 100);
 }
+*/
 
 void buzzer_beep(uint32_t duration_ms)
 {
@@ -296,35 +298,35 @@ int main(void)
         update_beep();
         
         // Check for UART timeout
-        if (nrf24_status.control_mode == CONTROL_MODE_UPLEVEL_UART) {
-            uint32_t current_time = HAL_GetTick();
-            if (current_time - nrf24_status.last_uart_time > UART_TIMEOUT_MS) {
-                // Switch back to joystick control if no UART data received
-                nrf24_status.control_mode = CONTROL_MODE_JOYSTICK;
-            }
-        }
+        // if (nrf24_status.control_mode == CONTROL_MODE_UPLEVEL_UART) {
+        //     uint32_t current_time = HAL_GetTick();
+        //     if (current_time - nrf24_status.last_uart_time > UART_TIMEOUT_MS) {
+        //         // Switch back to joystick control if no UART data received
+        //         nrf24_status.control_mode = CONTROL_MODE_JOYSTICK;
+        //     }
+        // }
 
-        if (NRF24_Comm_CanLocalControlWrite()) {
-            filter_adc_values();
+        // if (NRF24_Comm_CanLocalControlWrite()) {
+        //     filter_adc_values();
             
-            uint16_t adc_processed_values[4];
-            for(int i = 0; i < 4; i++) {
-                // Use signed arithmetic for error compensation
-                int32_t value = (int32_t)adc_filtered[i] - (int32_t)adc_calib_error[i];
+        //     uint16_t adc_processed_values[4];
+        //     for(int i = 0; i < 4; i++) {
+        //         // Use signed arithmetic for error compensation
+        //         int32_t value = (int32_t)adc_filtered[i] - (int32_t)adc_calib_error[i];
                 
-                // Bound check the result
-                if (value < ADC_MIN) value = ADC_MIN;
-                if (value > ADC_MAX) value = ADC_MAX;
+        //         // Bound check the result
+        //         if (value < ADC_MIN) value = ADC_MIN;
+        //         if (value > ADC_MAX) value = ADC_MAX;
                 
-                // Convert back to uint16_t after bounds checking
-                uint16_t compensated = (uint16_t)value;
+        //         // Convert back to uint16_t after bounds checking
+        //         uint16_t compensated = (uint16_t)value;
                 
-                // Now do the remapping
-                adc_processed_values[i] = remap_adc_value(compensated, adc_center[i], adc_min[i], adc_max[i]);
-            }
+        //         // Now do the remapping
+        //         adc_processed_values[i] = remap_adc_value(compensated, adc_center[i], adc_min[i], adc_max[i]);
+        //     }
             
-            NRF24_Comm_UpdateTxBuffer(adc_processed_values, AUX1, AUX2);
-        }
+        //     NRF24_Comm_UpdateTxBuffer(adc_processed_values, AUX1, AUX2);
+        // }
         
         NRF24_Comm_Transmit();
         NRF24_Comm_StatusFeedback();
