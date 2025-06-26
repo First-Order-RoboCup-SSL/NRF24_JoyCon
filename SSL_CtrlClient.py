@@ -30,7 +30,7 @@ class RobotControlGUI:
         # Robot ID (0-31)
         self.robot_id = tk.IntVar(value=0)
 
-        self.VELOCITY_SCALE = 1  # m/s for linear, rad/s for angular
+        self.VELOCITY_SCALE = 0.4  # m/s for linear, rad/s for angular
 
         self.setup_gui()
         self.setup_key_bindings()
@@ -243,30 +243,35 @@ class RobotControlGUI:
           11:   Frame end (0x55)
         """
         # Convert velocities to float16
-        # TODO: MSB and LSB are being swapped in the joycon NRF transmitter, possibly because of endianness.
-        # TODO: left and right axes are inverted.
-        # Tmp fix by flipping them here.
         forward_bytes = np.float16(self.velocities["forward"]).view(np.uint16)
-        swapped = ((forward_bytes & 0x00FF) << 8) | ((forward_bytes & 0xFF00) >> 8)
-        forward_bytes = swapped
         left_bytes = np.float16(self.velocities["left"]).view(np.uint16)
-        swapped = ((left_bytes & 0x00FF) << 8) | ((left_bytes & 0xFF00) >> 8)
-        left_bytes = swapped
         angular_bytes = np.float16(self.velocities["angular"]).view(np.uint16)
-        swapped = ((angular_bytes & 0x00FF) << 8) | ((angular_bytes & 0xFF00) >> 8)
-        angular_bytes = swapped
 
-        # Create packet
+        # # Create packet
+        # packet = bytearray(
+        #     [
+        #         0xAA,  # Frame head
+        #         self.robot_id.get() & 0xFF,  # Robot ID
+        #         (forward_bytes >> 8) & 0xFF,  # Forward velocity high byte
+        #         forward_bytes & 0xFF,  # Forward velocity low byte
+        #         (left_bytes >> 8) & 0xFF,  # Left velocity high byte
+        #         left_bytes & 0xFF,  # Left velocity low byte
+        #         (angular_bytes >> 8) & 0xFF,  # Angular velocity high byte
+        #         angular_bytes & 0xFF,  # Angular velocity low byte
+        #     ]
+        # )
+
+        # TODO: MSB and LSB are being swapped in the joycon NRF transmitter, possibly because of endianness.
         packet = bytearray(
             [
                 0xAA,  # Frame head
                 self.robot_id.get() & 0xFF,  # Robot ID
-                (forward_bytes >> 8) & 0xFF,  # Forward velocity high byte
                 forward_bytes & 0xFF,  # Forward velocity low byte
-                (left_bytes >> 8) & 0xFF,  # Left velocity high byte
+                (forward_bytes >> 8) & 0xFF,  # Forward velocity high byte
                 left_bytes & 0xFF,  # Left velocity low byte
-                (angular_bytes >> 8) & 0xFF,  # Angular velocity high byte
+                (left_bytes >> 8) & 0xFF,  # Left velocity high byte
                 angular_bytes & 0xFF,  # Angular velocity low byte
+                (angular_bytes >> 8) & 0xFF,  # Angular velocity high byte
             ]
         )
 
