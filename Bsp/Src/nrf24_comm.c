@@ -20,7 +20,10 @@
 /* Private variables ---------------------------------------------------------*/
 NRF24_Status_t nrf24_status = {0};
 NRF24_TxBuffer_t tx_buffer = {0};
-static uint8_t tx_addr[NRF24_TX_ADDR_SIZE] = {'1', 'N', 'o', 'd', 'e'};
+
+#define NUMROBOTS 2
+
+static uint8_t tx_addr[NUMROBOTS][NRF24_TX_ADDR_SIZE] = {{'1', 'N', 'o', 'd', 'e'}, {'2', 'N', 'o', 'd', 'e'}};
 static uint32_t last_feedback_time = 0;
 static bool status_feedback_pending = false;
 static uint8_t current_robot_id = 0;
@@ -143,7 +146,7 @@ static uint16_t float32_to_float16(float f) {
         hmantissa = mantissa >> 13; // 23 - 10
         return hsign | (hexponent << 10) | hmantissa;
     } else {
-        // Underflow ¡ú too small ¡ú return zero
+        // Underflow ï¿½ï¿½ too small ï¿½ï¿½ return zero
         return hsign;
     }
 }
@@ -194,8 +197,8 @@ bool NRF24_Comm_Init(void)
     nrf24_auto_retr_limit(10);              // 10 retries
     
     // Open TX pipe
-    nrf24_open_tx_pipe(tx_addr);
-    nrf24_open_rx_pipe(0, tx_addr);
+    nrf24_open_tx_pipe(tx_addr[0]);
+    nrf24_open_rx_pipe(0, tx_addr[0]);
     
     ce_high();
     
@@ -329,6 +332,13 @@ bool NRF24_Comm_Transmit(void)
   if (!nrf24_status.initialized) {
     return false;
   }
+
+  if (tx_buffer.robot_id >= NUMROBOTS) 
+    return false;
+
+  
+  nrf24_open_tx_pipe(tx_addr[tx_buffer.robot_id]);
+  nrf24_open_rx_pipe(0, tx_addr[tx_buffer.robot_id]);
   
   // Attempt transmission
   uint8_t result = nrf24_transmit((uint8_t*)&tx_buffer, NRF24_PAYLOAD_SIZE);
